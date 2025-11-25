@@ -97,6 +97,30 @@ function Get-DownloadedPngDataUrl {
   return $null
 }
 
+function ConvertBytesToJpegDataUrl([byte[]]$bytes, [int]$quality = 80) {
+  try {
+    $msIn = New-Object System.IO.MemoryStream($bytes)
+    $img = [System.Drawing.Image]::FromStream($msIn)
+    $jpgEnc = [System.Drawing.Imaging.ImageCodecInfo]::GetImageEncoders() | Where-Object { $_.MimeType -eq 'image/jpeg' }
+    $ep = New-Object System.Drawing.Imaging.EncoderParameters(1)
+    $q = [System.Drawing.Imaging.Encoder]::Quality
+    $ep.Param[0] = New-Object System.Drawing.Imaging.EncoderParameter($q, [int]$quality)
+    $msOut = New-Object System.IO.MemoryStream
+    $img.Save($msOut, $jpgEnc, $ep)
+    $b64 = [Convert]::ToBase64String($msOut.ToArray())
+    $img.Dispose(); $msIn.Dispose(); $msOut.Dispose()
+    return "data:image/jpeg;base64,$b64"
+  } catch { return $null }
+}
+
+function ConvertDataUrlToJpeg([string]$dataUrl, [int]$quality = 80) {
+  try {
+    $b64 = $dataUrl -replace '^data:image\/\w+;base64,',''
+    $bytes = [Convert]::FromBase64String($b64)
+    return ConvertBytesToJpegDataUrl $bytes $quality
+  } catch { return $null }
+}
+
 Write-Host "Dual snapshot agent started. Uploading to $Url every $IntervalSeconds seconds" -ForegroundColor Green
 while ($true) {
   try {
@@ -149,6 +173,9 @@ while ($true) {
     try { [Win32]::SetForegroundWindow($prev) | Out-Null } catch {}
 
     $payload = @{ images = @($img1, $img2) } | ConvertTo-Json -Depth 3
+    $j1 = ConvertDataUrlToJpeg $img1 80
+    $j2 = ConvertDataUrlToJpeg $img2 80
+    if ($j1 -and $j2) { $payload = @{ images = @($j1, $j2) } | ConvertTo-Json -Depth 3 }
     Invoke-WebRequest -Uri $Url -Method Post -ContentType 'application/json' -Body $payload -ErrorAction Stop | Out-Null
     Write-Host "Uploaded dual snapshot at $(Get-Date)" -ForegroundColor Cyan
   } catch {

@@ -54,7 +54,7 @@ const App: React.FC = () => {
   useEffect(() => {
     (async () => {
       try {
-        const r = await fetch('/api/auth/status');
+        const r = await fetch('/api/auth-status');
         setAuthed(r.ok);
       } catch { setAuthed(false); }
     })();
