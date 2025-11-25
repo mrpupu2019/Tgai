@@ -691,7 +691,7 @@ const App: React.FC = () => {
                         schedule={schedule} 
                         onSettingsChange={setSettings}
                         onScheduleChange={setSchedule}
-                        onSave={(s, sch) => { setSettings(s); setSchedule(sch); saveSettingsToServer(s, sch); }}
+                        onSave={(s, sch) => { setSettings(s); setSchedule(sch); saveSettingsToServer(s, sch); addMessage('Settings saved.', Sender.SYSTEM); }}
                     />
                 ) : (
                     <ChatInterface 

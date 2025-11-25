@@ -1,7 +1,6 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { pushQueue } from './_lib/db';
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') { res.status(405).json({ ok: false }); return; }
   try {
     let data: any = (req as any).body;
