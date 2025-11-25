@@ -1,5 +1,5 @@
 param(
-  [string]$Url = "http://localhost:3000/api/snapshot-upload2",
+  [string]$Url = "https://tgai-one.vercel.app/api/snapshot-upload2",
   [int]$IntervalSeconds = 60,
   [string]$WindowTitle = "XAUUSD",
   [int]$LoadDelayMs = 900,
@@ -176,7 +176,18 @@ while ($true) {
     $j1 = ConvertDataUrlToJpeg $img1 80
     $j2 = ConvertDataUrlToJpeg $img2 80
     if ($j1 -and $j2) { $payload = @{ images = @($j1, $j2) } | ConvertTo-Json -Depth 3 }
-    Invoke-WebRequest -Uri $Url -Method Post -ContentType 'application/json' -Body $payload -ErrorAction Stop | Out-Null
+    try {
+      Invoke-WebRequest -Uri $Url -Method Post -ContentType 'application/json' -Body $payload -ErrorAction Stop | Out-Null
+    } catch {
+      $urlSingle = $Url -replace 'snapshot-upload2','snapshot-upload'
+      try {
+        $payload1 = @{ image = $j1 } | ConvertTo-Json -Depth 3
+        Invoke-WebRequest -Uri $urlSingle -Method Post -ContentType 'application/json' -Body $payload1 -ErrorAction Stop | Out-Null
+        Start-Sleep -Milliseconds 300
+        $payload2 = @{ image = $j2 } | ConvertTo-Json -Depth 3
+        Invoke-WebRequest -Uri $urlSingle -Method Post -ContentType 'application/json' -Body $payload2 -ErrorAction Stop | Out-Null
+      } catch { throw $_ }
+    }
     Write-Host "Uploaded dual snapshot at $(Get-Date)" -ForegroundColor Cyan
   } catch {
     Write-Host "Upload failed: $_" -ForegroundColor Red

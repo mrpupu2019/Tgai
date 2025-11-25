@@ -40,6 +40,8 @@ export async function getHistory() { return (await readJson('history')) || []; }
 export async function clearHistory() { await writeJson('history', []); }
 export async function getSettings() { return await readJson('settings'); }
 export async function setSettings(payload: any) { await writeJson('settings', payload || {}); }
+export async function getLastSingle() { return await readJson('lastSingle'); }
+export async function setLastSingle(item: any) { await writeJson('lastSingle', item || {}); }
 export async function pushQueue(item: any) {
   try {
     const q = (await readJson('queue')) || [];

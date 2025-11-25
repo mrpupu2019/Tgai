@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { pushQueue } from './_lib/db';
+import { pushQueue, getLastSingle, setLastSingle } from './_lib/db';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') { res.status(405).json({ ok: false }); return; }
@@ -15,8 +15,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     const img = data.image;
     if (typeof img !== 'string' || !img.startsWith('data:image')) { res.status(400).json({ ok: false, error: 'INVALID_PAYLOAD' }); return; }
-    try { await pushQueue({ image: img, note: data.note || null, ts: Date.now() }); } catch {}
-    res.json({ ok: true });
+    const now = Date.now();
+    try {
+      const prev = await getLastSingle();
+      if (prev && typeof prev.image === 'string' && (now - (prev.ts || 0)) < 120000) {
+        await pushQueue({ images: [prev.image, img], note: data.note || null, ts: now });
+        await setLastSingle({});
+        res.json({ ok: true, paired: true });
+        return;
+      } else {
+        await setLastSingle({ image: img, ts: now });
+        await pushQueue({ image: img, note: data.note || null, ts: now });
+      }
+    } catch {}
+    res.json({ ok: true, paired: false });
   } catch (e: any) { res.status(500).json({ ok: false, error: String(e?.message || e) }); }
 }
 export const config = { maxDuration: 10 } as const;
