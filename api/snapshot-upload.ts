@@ -30,4 +30,4 @@ export default async function handler(req: any, res: any) {
     res.json({ ok: true, paired: false });
   } catch (e: any) { res.status(500).json({ ok: false, error: String(e?.message || e) }); }
 }
-export const config = { maxDuration: 10 } as const;
+export const config = { runtime: 'nodejs18.x', maxDuration: 10 } as const;
