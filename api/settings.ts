@@ -1,7 +1,11 @@
 import { getSettings, setSettings } from './_lib/db.js';
 
 export default async function handler(req: any, res: any) {
-  if (req.method === 'GET') { res.json({ ok: true, ...(await getSettings()) }); return; }
+  if (req.method === 'GET') {
+    const data = await getSettings();
+    res.json({ ok: true, settings: data?.settings ?? null, schedule: data?.schedule ?? null });
+    return;
+  }
   if (req.method === 'POST') {
     let raw = '';
     await new Promise<void>((resolve) => {
@@ -11,7 +15,8 @@ export default async function handler(req: any, res: any) {
     });
     try {
       const body = raw ? JSON.parse(raw) : (req.body || {});
-      await setSettings(body || {});
+      const payload = { settings: body?.settings ?? null, schedule: body?.schedule ?? null };
+      await setSettings(payload);
       res.json({ ok: true });
     } catch (e: any) { res.status(400).json({ ok: false, error: String(e) }); }
     return;
