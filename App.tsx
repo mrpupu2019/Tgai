@@ -542,7 +542,7 @@ const App: React.FC = () => {
       if (pollRef.current) clearInterval(pollRef.current);
       pollRef.current = setInterval(async () => {
         try {
-          const r = await fetch('/api/snapshot-latest');
+          const r = await fetch(`/api/snapshot-latest?t=${Date.now()}`);
           if (!r.ok) return;
           const d = await r.json();
           const key = (Array.isArray(d?.images) ? (d.images[0] || '') : (d?.image || '')) as string;
