@@ -41,9 +41,12 @@ export async function clearHistory() { await writeJson('history', []); }
 export async function getSettings() { return await readJson('settings'); }
 export async function setSettings(payload: any) { await writeJson('settings', payload || {}); }
 export async function pushQueue(item: any) {
-  const q = (await readJson('queue')) || [];
-  q.push(item);
-  await writeJson('queue', q);
+  try {
+    const q = (await readJson('queue')) || [];
+    q.push(item);
+    if (q.length > 500) q.splice(0, q.length - 500);
+    await writeJson('queue', q);
+  } catch {}
   await writeJson('latest', item);
 }
 export async function shiftQueue() {
@@ -53,4 +56,3 @@ export async function shiftQueue() {
   return item;
 }
 export async function getLatest() { return await readJson('latest'); }
-

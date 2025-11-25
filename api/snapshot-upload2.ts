@@ -20,7 +20,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       res.status(400).json({ ok: false, error: 'INVALID_IMAGES' });
       return;
     }
-    await pushQueue({ images: imgs, note: data.note || null, ts: Date.now() });
+    // Write latest first to avoid queue read errors
+    try { await pushQueue({ images: imgs, note: data.note || null, ts: Date.now() }); } catch {}
     res.json({ ok: true });
   } catch (e: any) { res.status(500).json({ ok: false, error: String(e?.message || e) }); }
 }
