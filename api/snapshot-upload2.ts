@@ -1,4 +1,4 @@
-import { pushQueue } from './_lib/db';
+import { pushQueue } from './_lib/db.js';
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') { res.status(405).json({ ok: false }); return; }

@@ -1,4 +1,4 @@
-import { getSettings, setSettings } from './_lib/db';
+import { getSettings, setSettings } from './_lib/db.js';
 
 export default async function handler(req: any, res: any) {
   if (req.method === 'GET') { res.json({ ok: true, ...(await getSettings()) }); return; }
