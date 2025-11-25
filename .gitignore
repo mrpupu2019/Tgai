@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+.env.*
+server/db.json
+.vercel/
+*.log
+.DS_Store
+coverage/

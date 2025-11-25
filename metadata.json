@@ -1,0 +1,5 @@
+{
+  "name": "MarketMind AI",
+  "description": "An intelligent market analysis assistant integrating live TradingView charts with Gemini 2.5 Flash for automated technical analysis and insights.",
+  "requestFramePermissions": []
+}
