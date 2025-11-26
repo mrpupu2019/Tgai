@@ -2,12 +2,14 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { put, list } from '@vercel/blob';
 
 const TOKEN = process.env.BLOB_READ_WRITE_TOKEN || '';
+const BASE_URL = process.env.BLOB_BASE_URL || '';
 const BASE = 'data';
 type Json = any;
 
 const mem: Record<string, Json> = {};
 
 async function getBlobUrl(key: string): Promise<string | null> {
+  if (BASE_URL) return `${BASE_URL}/${BASE}/${key}.json`;
   try {
     const l = await list({ prefix: `${BASE}/${key}`, token: TOKEN });
     const item = l.blobs?.[0];
