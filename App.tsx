@@ -90,6 +90,14 @@ const App: React.FC = () => {
     } catch {}
   };
 
+  const arrayBufferToBase64DataUrl = (buf: ArrayBuffer, mime: string): string => {
+    let binary = '';
+    const bytes = new Uint8Array(buf);
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) binary += String.fromCharCode(bytes[i]);
+    return `data:${mime};base64,` + btoa(binary);
+  };
+
   // --- Persistent Screen Capture Logic (Desktop) ---
   const getPersistentStream = async (): Promise<MediaStream> => {
       if (mediaStreamRef.current && mediaStreamRef.current.active) {
@@ -357,7 +365,10 @@ const App: React.FC = () => {
             setIsTyping(false);
             return;
         }
-        addMessage("Analysis Failed: " + errorMsg, Sender.SYSTEM);
+        const last = messages[messages.length - 1];
+        if (!(last && last.sender === Sender.SYSTEM && last.text === ("Analysis Failed: " + errorMsg))) {
+          addMessage("Analysis Failed: " + errorMsg, Sender.SYSTEM);
+        }
         setIsTyping(false);
       }
   }, [settings.customPrompt, settings.captureSource, settings.twoImageModeEnabled, settings.modelProvider, settings.modelName, isTyping, isCaptureSupported, schedule.quietHoursEnabled, schedule.quietStart, schedule.quietEnd, schedule.quietTimezone]);
@@ -566,8 +577,8 @@ const App: React.FC = () => {
               const resp = await fetch(u);
               const b = await resp.blob();
               const buf = await b.arrayBuffer();
-              const b64 = b.type.startsWith('image/') ? `data:${b.type};base64,${Buffer.from(buf).toString('base64')}` : '';
-              return b64;
+              if (!b.type || !b.type.startsWith('image/')) return '';
+              return arrayBufferToBase64DataUrl(buf, b.type);
             }));
             const imagesB64 = arr.filter(Boolean) as string[];
             addMessage(`Analysis Request: ${prompt}`, Sender.USER, undefined, false, imagesB64);
@@ -585,7 +596,7 @@ const App: React.FC = () => {
             const resp = await fetch(d.imageUrls[0]);
             const b = await resp.blob();
             const buf = await b.arrayBuffer();
-            const first = `data:${b.type};base64,${Buffer.from(buf).toString('base64')}`;
+            const first = arrayBufferToBase64DataUrl(buf, b.type || 'image/png');
             addMessage(`Analysis Request: ${prompt}`, Sender.USER, first);
             const res = await analyzeChart(first, prompt);
             addMessage(res, Sender.AI, undefined, true);
