@@ -54,7 +54,7 @@ const App: React.FC = () => {
   useEffect(() => {
     (async () => {
       try {
-        const r = await fetch('/api/auth-status');
+        const r = await fetch(`/api/auth-status?t=${Date.now()}`);
         setAuthed(r.ok);
       } catch { setAuthed(false); }
     })();
@@ -365,7 +365,7 @@ const App: React.FC = () => {
   useEffect(() => {
     (async () => {
       try {
-        const r = await fetch('/api/settings');
+        const r = await fetch(`/api/settings?t=${Date.now()}`);
         if (r.ok) {
           const d = await r.json();
           if (d?.settings) setSettings((prev) => ({ ...prev, ...d.settings }));
@@ -542,9 +542,20 @@ const App: React.FC = () => {
       if (pollRef.current) clearInterval(pollRef.current);
       pollRef.current = setInterval(async () => {
         try {
-          const r = await fetch(`/api/snapshot-latest?t=${Date.now()}`);
-          if (!r.ok) return;
-          const d = await r.json();
+          let d: any = null;
+          // Try feed first (URLs), then latest (dataUrls)
+          const rf = await fetch(`/api/snapshot-feed?t=${Date.now()}`);
+          if (rf.ok) {
+            const df = await rf.json();
+            if (Array.isArray(df?.urls) && df.urls.length > 0) {
+              d = { imageUrls: df.urls, image: df.urls[0], images: null };
+            }
+          }
+          if (!d) {
+            const r = await fetch(`/api/snapshot-latest?t=${Date.now()}`);
+            if (!r.ok) return;
+            d = await r.json();
+          }
           const key = (Array.isArray(d?.images) ? (d.images[0] || '') : (d?.image || '')) as string;
           if (!key || key === lastLatestRef.current || isTyping) return;
           lastLatestRef.current = key;
