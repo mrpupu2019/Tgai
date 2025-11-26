@@ -4,7 +4,7 @@ param(
   [string]$WindowTitle = "XAUUSD",
   [int]$LoadDelayMs = 900,
   [int]$ZoomSteps = 8,
-  [string]$BlobToken = ""
+  [string]$BlobToken = "vercel_blob_rw_FZzJMDadHphErPwk_H6qII6af0F4R9a12IIigZfSARdxv4S"
 )
 
 try { Add-Type -AssemblyName System.Windows.Forms } catch {}
@@ -33,6 +33,21 @@ public class Win32Ex {
   [DllImport("user32.dll")] public static extern void mouse_event(int dwFlags, int dx, int dy, int dwData, int dwExtraInfo);
 }
 "@
+
+function UploadToVercelBlob([string]$dataUrl, [string]$token) {
+  try {
+    $b64 = $dataUrl -replace '^data:image\/\w+;base64,',''
+    $bytes = [Convert]::FromBase64String($b64)
+    $ct = 'image/png'
+    if ($dataUrl -match '^data:image\/jpeg') { $ct = 'image/jpeg' }
+    $fname = "snapshot_$(Get-Date -Format 'yyyyMMdd_HHmmss_fff').jpg"
+    $uri = "https://blob.vercel.com/api/upload?access=public&contentType=$ct&filename=$fname"
+    $hdrs = @{ Authorization = "Bearer $token" }
+    $resp = Invoke-WebRequest -Uri $uri -Method Post -Headers $hdrs -Body $bytes -ContentType $ct -ErrorAction Stop
+    $json = $resp.Content | ConvertFrom-Json
+    return $json.url
+  } catch { return $null }
+}
 
 function Find-WindowHandle([string]$key) {
   $procs = Get-Process | Where-Object { $_.MainWindowTitle }
@@ -157,8 +172,12 @@ while ($true) {
         $endpoint = ($Url -replace 'snapshot-upload2','snapshot-upload2-url')
         Invoke-WebRequest -Uri $endpoint -Method Post -ContentType 'application/json' -Body $payload -ErrorAction Stop | Out-Null
       } else {
-        $payload = @{ images = @($img1, $img2) } | ConvertTo-Json -Depth 3
-        Invoke-WebRequest -Uri $Url -Method Post -ContentType 'application/json' -Body $payload -ErrorAction Stop | Out-Null
+        if ($u1) { $payload1 = @{ url = $u1 } | ConvertTo-Json -Depth 3; $singleUrl = ($Url -replace 'snapshot-upload2','snapshot-upload-url'); Invoke-WebRequest -Uri $singleUrl -Method Post -ContentType 'application/json' -Body $payload1 -ErrorAction Stop | Out-Null }
+        if ($u2) { $payload2 = @{ url = $u2 } | ConvertTo-Json -Depth 3; $singleUrl = ($Url -replace 'snapshot-upload2','snapshot-upload-url'); Invoke-WebRequest -Uri $singleUrl -Method Post -ContentType 'application/json' -Body $payload2 -ErrorAction Stop | Out-Null }
+        if (-not $u1 -or -not $u2) {
+          $payload = @{ images = @($img1, $img2) } | ConvertTo-Json -Depth 3
+          Invoke-WebRequest -Uri $Url -Method Post -ContentType 'application/json' -Body $payload -ErrorAction Stop | Out-Null
+        }
       }
     } else {
       $payload = @{ images = @($img1, $img2) } | ConvertTo-Json -Depth 3
@@ -173,19 +192,4 @@ while ($true) {
     } catch {}
   }
   Start-Sleep -Seconds $IntervalSeconds
-}
-
-function UploadToVercelBlob([string]$dataUrl, [string]$token) {
-  try {
-    $b64 = $dataUrl -replace '^data:image\/\w+;base64,',''
-    $bytes = [Convert]::FromBase64String($b64)
-    $ct = 'image/png'
-    if ($dataUrl -match '^data:image\/jpeg') { $ct = 'image/jpeg' }
-    $fname = "snapshot_$(Get-Date -Format 'yyyyMMdd_HHmmss_fff').jpg"
-    $uri = "https://blob.vercel.com/api/upload?access=public&contentType=$ct&filename=$fname"
-    $hdrs = @{ Authorization = "Bearer $token" }
-    $resp = Invoke-WebRequest -Uri $uri -Method Post -Headers $hdrs -Body $bytes -ContentType $ct -ErrorAction Stop
-    $json = $resp.Content | ConvertFrom-Json
-    return $json.url
-  } catch { return $null }
 }
