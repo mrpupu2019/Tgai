@@ -49,7 +49,10 @@ export async function pushQueue(item: any) {
     if (q.length > 500) q.splice(0, q.length - 500);
     await writeJson('queue', q);
   } catch {}
-  await writeJson('latest', item);
+  const latest = item?.images && Array.isArray(item.images)
+    ? { images: item.images, image: item.images[0], note: item.note || null, ts: item.ts || Date.now() }
+    : { image: item.image || null, images: item.images || null, note: item.note || null, ts: item.ts || Date.now() };
+  await writeJson('latest', latest);
 }
 export async function shiftQueue() {
   const q = (await readJson('queue')) || [];

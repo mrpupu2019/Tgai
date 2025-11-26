@@ -558,6 +558,11 @@ const App: React.FC = () => {
             addMessage(`Analysis Request: ${prompt}`, Sender.USER, d.image as string);
             const res = await analyzeChart(d.image as string, prompt);
             addMessage(res, Sender.AI, undefined, true);
+          } else if (Array.isArray(d?.images) && d.images.length > 0) {
+            const first = d.images[0] as string;
+            addMessage(`Analysis Request: ${prompt}`, Sender.USER, first);
+            const res = await analyzeChart(first, prompt);
+            addMessage(res, Sender.AI, undefined, true);
           }
           setIsTyping(false);
         } catch {}
