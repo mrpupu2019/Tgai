@@ -19,7 +19,7 @@ export async function readJson(key: string): Promise<Json | null> {
   if (!TOKEN) return mem[key] ?? null;
   const url = await getBlobUrl(`${key}.json`);
   if (!url) return null;
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${TOKEN}` }, cache: 'no-store' as any });
+  const res = await fetch(url, { cache: 'no-store' as any });
   if (!res.ok) return null;
   try { return await res.json(); } catch { return null; }
 }
