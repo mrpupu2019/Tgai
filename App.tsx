@@ -381,6 +381,15 @@ const App: React.FC = () => {
           const d = await r.json();
           if (d?.settings) setSettings((prev) => ({ ...prev, ...d.settings }));
           if (d?.schedule) setSchedule((prev) => ({ ...prev, ...d.schedule }));
+          try {
+            if (d?.settings) localStorage.setItem('appSettings', JSON.stringify(d.settings));
+            if (d?.schedule) localStorage.setItem('appSchedule', JSON.stringify(d.schedule));
+          } catch {}
+        } else {
+          const lsS = localStorage.getItem('appSettings');
+          const lsSch = localStorage.getItem('appSchedule');
+          if (lsS) setSettings((prev) => ({ ...prev, ...JSON.parse(lsS) }));
+          if (lsSch) setSchedule((prev) => ({ ...prev, ...JSON.parse(lsSch) }));
         }
       } catch {}
       try {
@@ -405,6 +414,10 @@ const App: React.FC = () => {
 
   const saveSettingsToServer = async (s: AppSettings, sch: ScheduleConfig) => {
     try {
+      try {
+        localStorage.setItem('appSettings', JSON.stringify(s));
+        localStorage.setItem('appSchedule', JSON.stringify(sch));
+      } catch {}
       await fetch('/api/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
