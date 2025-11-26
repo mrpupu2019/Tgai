@@ -550,13 +550,33 @@ const App: React.FC = () => {
           lastLatestRef.current = key;
           setIsTyping(true);
           const prompt = settings.customPrompt;
-          if (Array.isArray(d?.images) && d.images.length >= 2 && settings.twoImageModeEnabled) {
+          if (Array.isArray(d?.imageUrls) && d.imageUrls.length >= 2 && settings.twoImageModeEnabled) {
+            const arr = await Promise.all(d.imageUrls.map(async (u: string) => {
+              const resp = await fetch(u);
+              const b = await resp.blob();
+              const buf = await b.arrayBuffer();
+              const b64 = b.type.startsWith('image/') ? `data:${b.type};base64,${Buffer.from(buf).toString('base64')}` : '';
+              return b64;
+            }));
+            const imagesB64 = arr.filter(Boolean) as string[];
+            addMessage(`Analysis Request: ${prompt}`, Sender.USER, undefined, false, imagesB64);
+            const res = await analyzeChartMulti(imagesB64, prompt);
+            addMessage(res, Sender.AI, undefined, true);
+          } else if (Array.isArray(d?.images) && d.images.length >= 2 && settings.twoImageModeEnabled) {
             addMessage(`Analysis Request: ${prompt}`, Sender.USER, undefined, false, d.images as string[]);
             const res = await analyzeChartMulti(d.images as string[], prompt);
             addMessage(res, Sender.AI, undefined, true);
           } else if (d?.image) {
             addMessage(`Analysis Request: ${prompt}`, Sender.USER, d.image as string);
             const res = await analyzeChart(d.image as string, prompt);
+            addMessage(res, Sender.AI, undefined, true);
+          } else if (Array.isArray(d?.imageUrls) && d.imageUrls.length > 0) {
+            const resp = await fetch(d.imageUrls[0]);
+            const b = await resp.blob();
+            const buf = await b.arrayBuffer();
+            const first = `data:${b.type};base64,${Buffer.from(buf).toString('base64')}`;
+            addMessage(`Analysis Request: ${prompt}`, Sender.USER, first);
+            const res = await analyzeChart(first, prompt);
             addMessage(res, Sender.AI, undefined, true);
           } else if (Array.isArray(d?.images) && d.images.length > 0) {
             const first = d.images[0] as string;

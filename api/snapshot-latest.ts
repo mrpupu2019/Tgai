@@ -4,7 +4,7 @@ export default async function handler(req: any, res: any) {
   if (req.method !== 'GET') { res.status(405).json({ ok: false }); return; }
   try {
     const latest = await getLatest();
-    res.json({ ok: true, image: latest?.image || null, images: latest?.images || null });
+    res.json({ ok: true, image: latest?.image || null, images: latest?.images || null, imageUrls: latest?.imageUrls || null });
   } catch (e: any) {
     res.status(500).json({ ok: false, error: String(e?.message || e) });
   }

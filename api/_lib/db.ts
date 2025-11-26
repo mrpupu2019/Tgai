@@ -51,6 +51,8 @@ export async function pushQueue(item: any) {
   } catch {}
   const latest = item?.images && Array.isArray(item.images)
     ? { images: item.images, image: item.images[0], note: item.note || null, ts: item.ts || Date.now() }
+    : item?.imageUrls && Array.isArray(item.imageUrls)
+    ? { imageUrls: item.imageUrls, image: item.imageUrls[0], images: null, note: item.note || null, ts: item.ts || Date.now() }
     : { image: item.image || null, images: item.images || null, note: item.note || null, ts: item.ts || Date.now() };
   await writeJson('latest', latest);
 }

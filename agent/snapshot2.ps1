@@ -1,9 +1,10 @@
 param(
-  [string]$Url = "https://tgai-one.vercel.app/api/snapshot-upload2",
+  [string]$Url = "https://tgaii.vercel.app/api/snapshot-upload2",
   [int]$IntervalSeconds = 60,
   [string]$WindowTitle = "XAUUSD",
   [int]$LoadDelayMs = 900,
-  [int]$ZoomSteps = 8
+  [int]$ZoomSteps = 8,
+  [string]$BlobToken = ""
 )
 
 try { Add-Type -AssemblyName System.Windows.Forms } catch {}
@@ -148,8 +149,21 @@ while ($true) {
 
     try { [Win32]::SetForegroundWindow($prev) | Out-Null } catch {}
 
-    $payload = @{ images = @($img1, $img2) } | ConvertTo-Json -Depth 3
-    Invoke-WebRequest -Uri $Url -Method Post -ContentType 'application/json' -Body $payload -ErrorAction Stop | Out-Null
+    if ($BlobToken -and $BlobToken.Trim().Length -gt 0) {
+      $u1 = UploadToVercelBlob $img1 $BlobToken
+      $u2 = UploadToVercelBlob $img2 $BlobToken
+      if ($u1 -and $u2) {
+        $payload = @{ urls = @($u1, $u2) } | ConvertTo-Json -Depth 3
+        $endpoint = ($Url -replace 'snapshot-upload2','snapshot-upload2-url')
+        Invoke-WebRequest -Uri $endpoint -Method Post -ContentType 'application/json' -Body $payload -ErrorAction Stop | Out-Null
+      } else {
+        $payload = @{ images = @($img1, $img2) } | ConvertTo-Json -Depth 3
+        Invoke-WebRequest -Uri $Url -Method Post -ContentType 'application/json' -Body $payload -ErrorAction Stop | Out-Null
+      }
+    } else {
+      $payload = @{ images = @($img1, $img2) } | ConvertTo-Json -Depth 3
+      Invoke-WebRequest -Uri $Url -Method Post -ContentType 'application/json' -Body $payload -ErrorAction Stop | Out-Null
+    }
     Write-Host "Uploaded dual snapshot at $(Get-Date)" -ForegroundColor Cyan
   } catch {
     Write-Host "Upload failed: $_" -ForegroundColor Red
@@ -159,4 +173,19 @@ while ($true) {
     } catch {}
   }
   Start-Sleep -Seconds $IntervalSeconds
+}
+
+function UploadToVercelBlob([string]$dataUrl, [string]$token) {
+  try {
+    $b64 = $dataUrl -replace '^data:image\/\w+;base64,',''
+    $bytes = [Convert]::FromBase64String($b64)
+    $ct = 'image/png'
+    if ($dataUrl -match '^data:image\/jpeg') { $ct = 'image/jpeg' }
+    $fname = "snapshot_$(Get-Date -Format 'yyyyMMdd_HHmmss_fff').jpg"
+    $uri = "https://blob.vercel.com/api/upload?access=public&contentType=$ct&filename=$fname"
+    $hdrs = @{ Authorization = "Bearer $token" }
+    $resp = Invoke-WebRequest -Uri $uri -Method Post -Headers $hdrs -Body $bytes -ContentType $ct -ErrorAction Stop
+    $json = $resp.Content | ConvertFrom-Json
+    return $json.url
+  } catch { return $null }
 }
